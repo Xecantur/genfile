@@ -2,7 +2,8 @@ genfile generates bare files for common programming languages to reduce typing t
 old thing thousands of times, it can also generate bare files with custom
 #include/import's for C,C++ and python respectively(in the future it should handle
 perl,lua,ruby, and perhaps rust, and maybe some odds and ends after a common syntax for
-describing formats has been written)
+describing formats has been written) I do intend to add support for other common files
+such as Makefiles and perhaps Licenses as well.
 
 
 
