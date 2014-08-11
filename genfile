@@ -1,0 +1,177 @@
+#!/usr/bin/python
+"""Usage:
+    genfile -h | --help | --version
+    genfile -c <filename> [-i <includes>]
+    genfile -x <filename> [-i <includes>] | --cpp     <filename> [-i <includes>]
+    genfile -p <filename> [-i <includes>] | --python  <filename> [-i <includes>]
+    genfile -d <filename> [-i <includes>] | --cheader <filename> [-i <includes>]
+"""
+
+from docopt import docopt
+import sys
+
+c_template_bare = """#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+//generated with genfile -c <filename>
+
+int main(int argc, char * argv[])
+{
+
+    return 0;
+}
+""";
+
+
+cpp_template_bare = """#include <iostream>
+#include <string>
+#include <vector>
+//generated with genfile -x <filename> or genfile --cpp <filename>
+
+int main(int argc, char ** argv)
+{
+
+    return 0;
+}
+""";
+
+python_template_bare = """#!/usr/bin/python
+import sys
+
+def main():
+    print(\"Hello World!\");
+    return 0;
+
+main();
+""";
+
+c_body = """int main(int argc, char * argv[])
+{
+
+    return 0;
+}
+""";
+
+cpp_body = """int main(int argc, char ** argv)
+{
+
+    return 0;
+}
+""";
+
+python_body = """def main():
+    print(\"Hello World\");
+main();
+""";
+
+def genlist(i_str):
+    list = i_str.split();
+    return list;
+def header_write_bare(file,filename):
+    tmp = filename.split('.');
+    a = tmp[0];
+    b = tmp[1];
+    file.write("#ifndef __%s_%s__\n" % (a.upper(),b.upper()));
+    file.write("#define __%s_%s__\n" % (a.upper(),b.upper()));
+    file.write("//Generated with genfile -d %s\n" % (filename));
+    file.write("\n\n\n");
+    file.write("#endif //__%s_%s__" % (a.upper(),b.upper()));
+
+def header_write_custom(file,filename,i_list):
+    tmp = filename.split('.');
+    a = tmp[0];
+    b = tmp[1];
+    file.write("#ifndef __%s_%s__\n" % (a.upper(),b.upper()));
+    file.write("#define __%s_%s__\n" % (a.upper(),b.upper()));
+    writeimps(i_list,file,'c');
+    file.write("//Generated with genfile -d %s -i \"%s\"\n" % (filename,i_list));
+    file.write("\n\n\n");
+    file.write("#endif //__%s_%s__" % (a.upper(),b.upper()));
+
+def writeimps(i_list,file,type):
+    for imp in i_list:
+        if type == "c" or type == "cpp":
+            file.write("#include <"+ imp +">\n");
+        if type == "python":
+            file.write("import " + imp + "\n");
+
+
+if __name__ == '__main__':
+    args = docopt(__doc__, argv=sys.argv[1:],help=False, version='1.0');
+    #print(args);
+    for key in args:
+        if key == "-c":
+            if args[key]== True:
+                if args["-i"] != True:
+                    print("generating C file");
+                    file = open(args["<filename>"],'w');
+                    file.write(c_template_bare);
+                    file.close();
+                if args["-i"] == True:
+                    print("generating Custom C file");
+                    file = open(args["<filename>"],'w');
+                    writeimps(genlist(args["<includes>"]),file,"c");
+                    file.write("//Generated with genfile -c %s -i \"%s\"" %
+                            (args["<filename>"],args["<includes>"]));
+                    file.write("\n\n\n");
+                    file.write(c_body);
+                    file.close();
+        if key == "-x" or key == "--cpp":
+            if args[key] == True:
+                if args["-i"] != True:
+                    print("generating CPP file");
+                    file = open(args["<filename>"],'w');
+                    file.write(cpp_template_bare);
+                    file.close();
+                if args["-i"] == True:
+                    print("generating custom CPP file");
+                    file = open(args["<filename>"],'w');
+                    writeimps(genlist(args["<includes>"]),file,"cpp");
+                    file.write("//Generated with genfile -x %s -i \"%s\"" %
+                            (args["<filename>"],args["<includes>"]));
+                    file.write("\n\n\n");
+                    file.write(cpp_body);
+                    file.close();
+        if key == "-p" or key == "--python":
+            if args[key] == True:
+                if args["-i"] != True:
+                    print("generating Python file");
+                    file = open(args["<filename>"],'w');
+                    file.write(python_template_bare);
+                    file.close();
+                if args["-i"] == True:
+                    print("generating custom Python file");
+                    file = open(args["<filename>"],'w');
+                    writeimps(genlist(args["<includes>"]),file,"python");
+                    file.write("#Generated with genfile -p %s -i \"%s\"" %
+                        (args["<filename>"],args["<includes>"]));
+                    file.write("\n\n\n");
+                    file.write(python_body);
+                    file.close();
+        if key == "-d" or key == "--cheader":
+            if args[key] == True:
+                if args["-i"] != True:
+                    print("generating bare C Header");
+                    file = open(args["<filename>"],'w');
+                    header_write_bare(file,args["<filename>"]);
+                    file.close();
+                if args["-i"] == True:
+                    print("generating custom C Header");
+                    file = open(args["<filename>"],'w');
+                    header_write_custom(file,args["<filename>"],genlist(args["<includes>"]));
+                    file.close();
+        if key == "-h" or key == "--help":
+            if args[key] == True:
+                print("""Usage: genfile [options]
+                -c           <filename>           generate a bare C Unit
+                -d --cheader <filename>           generate a bare C Header
+                -h --help                         this help text
+                -p --python  <filename>           generate a bare Python Script
+                -x --cpp     <filename>           generate a bare C++ Unit
+                
+                SubOptions:
+                -i           <includes>           generate with custom includes/imports
+                
+                Author: Cexru 2014-Aug-11
+                License: BSD 2 Clause / Copyright 2014
+                """);
